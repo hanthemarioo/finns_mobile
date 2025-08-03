@@ -66,6 +66,41 @@ class _ShedsManagementTabState extends State<ShedsManagementTab> {
     }
   }
 
+  Future<void> _showDeleteConfirmationDialog({
+    required String title,
+    required String content,
+    required VoidCallback onConfirm, // The function to run if the user confirms
+  }) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // User must tap a button
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: ListBody(children: <Widget>[Text(content)]),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                onConfirm(); // Execute the delete action
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,22 +134,72 @@ class _ShedsManagementTabState extends State<ShedsManagementTab> {
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text('Capacity: ${shed.code}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.grey),
-                        onPressed: () async {
-                          final result = await Navigator.push<bool?>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AddShedPage(
-                                locationId: widget.locationId,
-                                shed: shed, // Pass the existing shed data
-                              ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.grey),
+                            onPressed: () async {
+                              final result = await Navigator.push<bool?>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AddShedPage(
+                                    locationId: widget.locationId,
+                                    shed: shed, // Pass the existing shed data
+                                  ),
+                                ),
+                              );
+                              if (result == true) {
+                                _loadSheds(); // Refresh the list on success
+                              }
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.redAccent,
                             ),
-                          );
-                          if (result == true) {
-                            _loadSheds(); // Refresh the list on success
-                          }
-                        },
+                            tooltip: 'Delete Shed',
+                            onPressed: () {
+                              // --- 3. CALL THE CONFIRMATION DIALOG ---
+                              _showDeleteConfirmationDialog(
+                                title: 'Delete Shed?',
+                                content:
+                                    'Are you sure you want to delete "${shed.name}"? This action cannot be undone and will delete all associated flocks.',
+                                onConfirm: () async {
+                                  try {
+                                    final token = Provider.of<AuthProvider>(
+                                      context,
+                                      listen: false,
+                                    ).token!;
+                                    await _apiService.deleteShed(
+                                      token,
+                                      shed.id,
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Shed deleted successfully',
+                                        ),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                    _loadSheds(); // Refresh the list
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Failed to delete: ${e.toString()}',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   );
@@ -167,8 +252,46 @@ class _FlocksManagementTabState extends State<FlocksManagementTab> {
   void _loadFlocks() {
     final token = Provider.of<AuthProvider>(context, listen: false).token!;
     setState(() {
-      _flocksFuture = _apiService.getFlocksForLocation(token, widget.locationId);
+      _flocksFuture = _apiService.getFlocksForLocation(
+        token,
+        widget.locationId,
+      );
     });
+  }
+
+  Future<void> _showDeleteConfirmationDialog({
+    required String title,
+    required String content,
+    required VoidCallback onConfirm, // The function to run if the user confirms
+  }) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // User must tap a button
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: ListBody(children: <Widget>[Text(content)]),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                onConfirm(); // Execute the delete action
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -194,23 +317,82 @@ class _FlocksManagementTabState extends State<FlocksManagementTab> {
                   final flock = flocks[index];
                   return Card(
                     child: ListTile(
-                      leading: const Icon(Icons.groups, color: Colors.orange, size: 40),
-                      title: Text(flock.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('${flock.breed} - Quantity: ${flock.initialPopulation}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.grey),
-                        onPressed: () async {
-                          final result = await Navigator.push<bool?>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AddFlockPage(
-                                locationId: widget.locationId,
-                                flock: flock,
-                              ),
+                      leading: const Icon(
+                        Icons.groups,
+                        color: Colors.orange,
+                        size: 40,
+                      ),
+                      title: Text(
+                        flock.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        '${flock.breed} - Quantity: ${flock.initialPopulation}',
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.grey),
+                            onPressed: () async {
+                              final result = await Navigator.push<bool?>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AddFlockPage(
+                                    locationId: widget.locationId,
+                                    flock: flock,
+                                  ),
+                                ),
+                              );
+                              if (result == true) _loadFlocks();
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.redAccent,
                             ),
-                          );
-                          if (result == true) _loadFlocks();
-                        },
+                            tooltip: 'Delete Flock',
+                            onPressed: () {
+                              // --- 3. CALL THE CONFIRMATION DIALOG ---
+                              _showDeleteConfirmationDialog(
+                                title: 'Delete Flock?',
+                                content:
+                                    'Are you sure you want to delete "${flock.name}"? This action cannot be undone and will delete all associated flocks.',
+                                onConfirm: () async {
+                                  try {
+                                    final token = Provider.of<AuthProvider>(
+                                      context,
+                                      listen: false,
+                                    ).token!;
+                                    await _apiService.deleteFlock(
+                                      token,
+                                      flock.id,
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Flock deleted successfully',
+                                        ),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                    _loadFlocks(); // Refresh the list
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Failed to delete: ${e.toString()}',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   );

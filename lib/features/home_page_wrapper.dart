@@ -62,6 +62,77 @@ class _HomePageWrapperState extends State<HomePageWrapper> {
     });
   }
 
+  Future<void> _showDeleteConfirmationDialog({
+    required String title,
+    required String content,
+    required VoidCallback onConfirm, // The function to run if the user confirms
+  }) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // User must tap a button
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: ListBody(children: <Widget>[Text(content)]),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                onConfirm(); // Execute the delete action
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _handleDeleteLocation(Location location) {
+    _showDeleteConfirmationDialog(
+      title: 'Delete Location?',
+      content:
+          'Are you sure you want to delete "${location.name}"? This action cannot be undone and will delete all associated sheds and flocks.',
+      onConfirm: () async {
+        try {
+          final token = Provider.of<AuthProvider>(
+            context,
+            listen: false,
+          ).token!;
+          await _apiService.deleteLocation(token, location.id);
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Location deleted successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+          _refreshLocations(); // Refresh the list
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to delete: ${e.toString()}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // --- 2. THE FIX: Conditionally build the UI ---
@@ -76,6 +147,7 @@ class _HomePageWrapperState extends State<HomePageWrapper> {
       LocationPage(
         locationsFuture: _locationsFuture!,
         onRefresh: _refreshLocations, // Pass the refresh function
+        onDelete: _handleDeleteLocation, // Pass the refresh function
       ),
       const ProductionPage(),
     ];

@@ -54,6 +54,41 @@ class _ProductionPageState extends State<ProductionPage>
     super.dispose();
   }
 
+  Future<void> _showDeleteConfirmationDialog({
+    required String title,
+    required String content,
+    required VoidCallback onConfirm, // The function to run if the user confirms
+  }) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // User must tap a button
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: ListBody(children: <Widget>[Text(content)]),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                onConfirm(); // Execute the delete action
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -107,10 +142,13 @@ class _ProductionPageState extends State<ProductionPage>
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
+          final int currentIndex = _tabController.index;
+
           final result = await Navigator.push<bool?>(
             context,
             MaterialPageRoute(
-              builder: (context) => const InputProductionPage(),
+              builder: (context) =>
+                  InputProductionPage(initialTabIndex: currentIndex),
             ),
           );
           if (result == true) {
@@ -154,18 +192,62 @@ class _ProductionPageState extends State<ProductionPage>
           'Flock: ${eggRecord.flockName}\nDate: ${eggRecord.date}',
         ),
         isThreeLine: true,
-        trailing: IconButton(
-          icon: const Icon(Icons.edit, color: Colors.grey),
-          onPressed: () async {
-            final result = await Navigator.push<bool?>(
-              context,
-              MaterialPageRoute(
-                // --- NAVIGATE TO THE SAME INPUT PAGE ---
-                builder: (context) => InputProductionPage(eggRecord: eggRecord),
-              ),
-            );
-            if (result == true) _loadProductionData();
-          },
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.grey),
+              onPressed: () async {
+                final result = await Navigator.push<bool?>(
+                  context,
+                  MaterialPageRoute(
+                    // --- NAVIGATE TO THE SAME INPUT PAGE ---
+                    builder: (context) =>
+                        InputProductionPage(eggRecord: eggRecord),
+                  ),
+                );
+                if (result == true) _loadProductionData();
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              tooltip: 'Delete EggProduction',
+              onPressed: () {
+                // --- 3. CALL THE CONFIRMATION DIALOG ---
+                _showDeleteConfirmationDialog(
+                  title: 'Delete EggProduction?',
+                  content:
+                      'Are you sure you want to delete This Data? This action cannot be undone and will delete pemanently.',
+                  onConfirm: () async {
+                    try {
+                      final token = Provider.of<AuthProvider>(
+                        context,
+                        listen: false,
+                      ).token!;
+                      await _apiService.deleteEggProduction(
+                        token,
+                        eggRecord.id,
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('EggProduction deleted successfully'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                      _loadProductionData(); // Refresh the list
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to delete: ${e.toString()}'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -185,19 +267,62 @@ class _ProductionPageState extends State<ProductionPage>
           'Flock: ${meatRecord.flockName}\nDate: ${meatRecord.date}',
         ),
         isThreeLine: true,
-        trailing: IconButton(
-          icon: const Icon(Icons.edit, color: Colors.grey),
-          onPressed: () async {
-            final result = await Navigator.push<bool?>(
-              context,
-              MaterialPageRoute(
-                // --- NAVIGATE TO THE SAME INPUT PAGE ---
-                builder: (context) =>
-                    InputProductionPage(meatRecord: meatRecord),
-              ),
-            );
-            if (result == true) _loadProductionData();
-          },
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.grey),
+              onPressed: () async {
+                final result = await Navigator.push<bool?>(
+                  context,
+                  MaterialPageRoute(
+                    // --- NAVIGATE TO THE SAME INPUT PAGE ---
+                    builder: (context) =>
+                        InputProductionPage(meatRecord: meatRecord),
+                  ),
+                );
+                if (result == true) _loadProductionData();
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              tooltip: 'Delete MeatProduction',
+              onPressed: () {
+                // --- 3. CALL THE CONFIRMATION DIALOG ---
+                _showDeleteConfirmationDialog(
+                  title: 'Delete MeatProduction?',
+                  content:
+                      'Are you sure you want to delete This Data? This action cannot be undone and will delete permanently.',
+                  onConfirm: () async {
+                    try {
+                      final token = Provider.of<AuthProvider>(
+                        context,
+                        listen: false,
+                      ).token!;
+                      await _apiService.deleteMeatProduction(
+                        token,
+                        meatRecord.id,
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('MeatProduction deleted successfully'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                      _loadProductionData(); // Refresh the list
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to delete: ${e.toString()}'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+          ],
         ),
       ),
     );

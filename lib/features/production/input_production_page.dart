@@ -11,8 +11,14 @@ import 'package:provider/provider.dart';
 class InputProductionPage extends StatefulWidget {
   final EggProduction? eggRecord;
   final MeatProduction? meatRecord;
+  final int initialTabIndex;
 
-  const InputProductionPage({super.key, this.eggRecord, this.meatRecord});
+  const InputProductionPage({
+    super.key,
+    this.eggRecord,
+    this.meatRecord,
+    this.initialTabIndex = 0,
+  });
 
   @override
   State<InputProductionPage> createState() => _InputProductionPageState();
@@ -32,14 +38,15 @@ class _InputProductionPageState extends State<InputProductionPage>
   @override
   void initState() {
     super.initState();
+    
+    final startingIndex = _isEditMode
+        ? (_isEggMode ? 0 : 1)
+        : widget.initialTabIndex;
 
-    // --- 3. INITIALIZE THE CONTROLLER HERE ---
-    // Calculate the correct starting index.
-    final initialTabIndex = _isEditMode ? (_isEggMode ? 0 : 1) : 0;
     _tabController = TabController(
       length: 2,
       vsync: this,
-      initialIndex: initialTabIndex,
+      initialIndex: startingIndex,
     );
 
     if (!_isEditMode) {

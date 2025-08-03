@@ -7,11 +7,13 @@ class LocationPage extends StatelessWidget {
   /// --- 1. It receives the future and the refresh function as parameters ---
   final Future<List<Location>> locationsFuture;
   final Future<void> Function() onRefresh;
+  final void Function(Location) onDelete;
 
   const LocationPage({
     super.key,
     required this.locationsFuture,
     required this.onRefresh,
+    required this.onDelete,
   });
 
   // The refresh logic needs to be passed down for the Add/Edit buttons
@@ -104,6 +106,18 @@ class LocationPage extends StatelessWidget {
                                   ),
                                 );
                                 await _handleNavigationResult(context, result);
+                              },
+                            ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.redAccent,
+                              ),
+                              tooltip: 'Delete Location',
+                              onPressed: () {
+                                // --- 3. SIMPLY CALL THE PASSED-IN FUNCTION ---
+                                // It has no logic of its own.
+                                onDelete(location);
                               },
                             ),
                           ],

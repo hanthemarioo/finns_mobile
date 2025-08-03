@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:finns_mobile/models/dashboard_data_model.dart';
 import 'package:finns_mobile/models/egg_production_model.dart';
 import 'package:finns_mobile/models/flock_model.dart';
 import 'package:finns_mobile/models/meat_production_model.dart';
@@ -123,6 +124,17 @@ class ApiService {
     }
   }
 
+  Future<void> deleteLocation(String token, int id) async {
+    final response = await http.delete(
+      Uri.parse('${_baseUrl}location/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      // 204 No Content is also a valid success response
+      throw Exception('Failed to delete location.');
+    }
+  }
+
   Future<List<Shed>> getSheds(String token, int locationId) async {
     try {
       final response = await http.get(
@@ -202,6 +214,16 @@ class ApiService {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to update shed.');
+    }
+  }
+
+  Future<void> deleteShed(String token, int id) async {
+    final response = await http.delete(
+      Uri.parse('${_baseUrl}shed/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Failed to delete shed.');
     }
   }
 
@@ -291,6 +313,16 @@ class ApiService {
     );
     if (response.statusCode != 200) {
       throw Exception('Failed to update flock.');
+    }
+  }
+
+  Future<void> deleteFlock(String token, int id) async {
+    final response = await http.delete(
+      Uri.parse('${_baseUrl}flock/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Failed to delete flock.');
     }
   }
 
@@ -412,6 +444,16 @@ class ApiService {
     }
   }
 
+  Future<void> deleteEggProduction(String token, int id) async {
+    final response = await http.delete(
+      Uri.parse('${_baseUrl}egg-production/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Failed to delete egg production.');
+    }
+  }
+
   Future<void> createMeatProduction({
     required String token,
     required String flockId,
@@ -476,6 +518,31 @@ class ApiService {
     print("Response Body: ${response.body}");
     if (response.statusCode != 201 && response.statusCode != 200) {
       throw Exception('Failed to create meat production.');
+    }
+  }
+
+  Future<void> deleteMeatProduction(String token, int id) async {
+    final response = await http.delete(
+      Uri.parse('${_baseUrl}meat-production/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Failed to delete meat production.');
+    }
+  }
+
+  Future<DashboardData> getDashboardData(String token) async {
+    final response = await http.get(
+      Uri.parse('${_baseUrl}dashboard'),
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+    );
+
+    print("Response Body Dashboard: ${response.body}");
+
+    if (response.statusCode == 200) {
+      return dashboardDataFromJson(response.body);
+    } else {
+      throw Exception('Failed to load dashboard data.');
     }
   }
 }
