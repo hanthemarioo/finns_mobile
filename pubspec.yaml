@@ -1,0 +1,25 @@
+name: finns_mobile
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  lucide_icons_flutter: ^3.0.6
+  http: ^1.2.1
+  provider: ^6.1.2
+  flutter_secure_storage: ^9.2.2
+  intl: ^0.19.0
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
